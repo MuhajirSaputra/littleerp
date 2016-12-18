@@ -1,6 +1,6 @@
 import os
 
-from django_reporting.utils import Reporting
+#from django_reporting.utils import Reporting
 from django.template import Context
 
 from hrm.models import Employee
