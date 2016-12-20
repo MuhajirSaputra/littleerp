@@ -1,4 +1,5 @@
 from __future__ import division
+
 from decimal import Decimal
 
 from django_fsm import FSMField, transition
@@ -15,7 +16,7 @@ from operational.managers import ProcessingPayrollManager, PayrollPeriodManager
 
 class PayrollState(object):
     '''
-    Constants to represent the `state`s of the PublishableModel
+    Constants to represent the `state`s of the Publishable Model
     '''
     DRAFT = 'DRAFT'
     FINAL = 'FINAL'
@@ -30,7 +31,7 @@ class PayrollState(object):
 
 class PeriodState(object):
     '''
-    Constants to represent the `state`s of the PublishableModel
+    Constants to represent the `state`s of the Publishable Model
     '''
     OPEN = 'OPEN'
     CLOSE = 'CLOSE'
@@ -84,6 +85,18 @@ class VisitCustomerDetail(models.Model):
 
 
 class PayrollPeriod(models.Model):
+    """Payroll period models.
+
+    Records & classifiying ``Payroll`` & ``Attendance`` objects
+    periodicly based on spesific date
+
+    Attributes
+    ----------
+    date_create, start_date, end_date : ``datetime.date`` objects
+    state : str
+        String of ``PeriodState.CHOICES`` constant represents state
+        of PayrollPeriod objects.
+    """
     period = models.CharField(
         verbose_name='Period',
         max_length=15,
@@ -116,24 +129,119 @@ class PayrollPeriod(models.Model):
     def autocomplete_search_fields():
         return ('period',)
 
-    @transition(field=state, source=PeriodState.OPEN, target=PeriodState.CLOSE, permission='operational.close_period')
+    @transition(field=state, source=PeriodState.OPEN,
+                target=PeriodState.CLOSE,
+                permission='operational.close_period')
     def close(self):
         pass
 
 
 class Attendance(models.Model):
-    work_day = models.PositiveIntegerField(verbose_name='Day Work', null=True, blank=True, default=0)
-    sick_day = models.PositiveIntegerField(verbose_name='Day Sick', null=True, blank=True, default=0)
-    alpha_day = models.PositiveIntegerField(verbose_name='Day Alpha', null=True, blank=True, default=0)
-    leave_day = models.PositiveIntegerField(verbose_name='Leave Taken', null=True, blank=True, default=0)
-    leave_left = models.PositiveIntegerField(verbose_name='Leave Left', null=True, blank=True, default=0)
-    ln = models.PositiveIntegerField(verbose_name='LN', null=True, blank=True, default=0)
-    lp = models.PositiveIntegerField(verbose_name='LP', null=True, blank=True, default=0)
-    lk = models.PositiveIntegerField(verbose_name='LK', null=True, blank=True, default=0)
-    l1 = models.PositiveIntegerField(verbose_name='L1', null=True, blank=True, default=0)
-    l2 = models.PositiveIntegerField(verbose_name='L2', null=True, blank=True, default=0)
-    l3 = models.PositiveIntegerField(verbose_name='L3', null=True, blank=True, default=0)
-    l4 = models.PositiveIntegerField(verbose_name='L4', null=True, blank=True, default=0)
+    """Attendance models.
+
+    Records monthly attendance of employee
+
+    Attributes
+    ----------
+    work_day : int
+        Value of total work days a month
+    sick_day : int
+        Value of total sick days a month
+    alpha_day : int
+        Value of total leave day a month
+    leave_left : int
+        Value of remaining leave left in current period
+    ln : int
+        Value of normal overtime days in current period
+    lp : int
+        Value of changable overtime days in current period
+    lk : int
+        Value of specific overtime days in current period
+    l1, l2, l3, l4 : int
+        Value of total days of hourly overtime, e.g if l1
+        value set to 5, it means there are 5 days of 1 hour
+        overtime each day in current period
+    employee : ``Employee`` object
+        Object of ``Employee`` being recorded
+    period : ``PayrollPeriod`` object
+        Period which this attendance is belong to.
+    staff : ``django.contrib.auth.models.User`` object
+        Staff which calculate and do work for this Attendance records.
+        this value commonly get from currently loged user and can be
+        retrieved from ``HttpRequest`` object
+    """
+    work_day = models.PositiveIntegerField(
+        verbose_name='Day Work',
+        null=True,
+        blank=True,
+        default=0
+    )
+    sick_day = models.PositiveIntegerField(
+        verbose_name='Day Sick',
+        null=True,
+        blank=True,
+        default=0
+    )
+    alpha_day = models.PositiveIntegerField(
+        verbose_name='Day Alpha',
+        null=True,
+        blank=True,
+        default=0
+    )
+    leave_day = models.PositiveIntegerField(
+        verbose_name='Leave Taken',
+        null=True,
+        blank=True,
+        default=0
+    )
+    leave_left = models.PositiveIntegerField(
+        verbose_name='Leave Left',
+        null=True,
+        blank=True,
+        default=0
+    )
+    ln = models.PositiveIntegerField(
+        verbose_name='LN',
+        null=True,
+        blank=True,
+        default=0
+    )
+    lp = models.PositiveIntegerField(
+        verbose_name='LP',
+        null=True,
+        blank=True,
+        default=0
+    )
+    lk = models.PositiveIntegerField(
+        verbose_name='LK',
+        null=True,
+        blank=True,
+        default=0
+    )
+    l1 = models.PositiveIntegerField(
+        verbose_name='L1',
+        null=True,
+        blank=True,
+        default=0
+    )
+    l2 = models.PositiveIntegerField(
+        verbose_name='L2',
+        null=True,
+        blank=True,
+        default=0
+    )
+    l3 = models.PositiveIntegerField(
+        verbose_name='L3',
+        null=True,
+        blank=True,
+        default=0
+    )
+    l4 = models.PositiveIntegerField(
+        verbose_name='L4',
+        null=True,
+        blank=True,
+        default=0
+    )
     employee = models.ForeignKey(
         Employee,
         limit_choices_to=Q(is_active=True) & (
@@ -185,6 +293,30 @@ class Attendance(models.Model):
 
 
 class Payroll(models.Model):
+    """Payroll models.
+
+    Records monthly payroll of employee
+
+    Attributes
+    ----------
+    contract : ``EmployeeContract`` object
+    period : ``PayrollPeriod`` object
+    base_salary : decimal
+    overtime : decimal, optional
+    back_pay : decimal, optional
+    base_salary_per_day : decimal, optional
+    normal_overtime : decimal, optional
+    total : decimal, optional
+        Total salary amount, this attribute is 0 in new record and the
+        state status is ``PayrollState.DRAFT``. The value is
+        automatically calculated by ``calculate_total()`` function when
+        state changed.
+    staff : ``django.contrib.auth.models.User``
+        Staff which calculate and do work for this Attendance records.
+        this value commonly get from currently loged user and can be
+    state : ``FSMField`` object state, optional
+        Status indication the current payroll state, default to "OPEN"
+    """
     contract = models.ForeignKey(
         EmployeeContract,
         limit_choices_to=Q(contract_status='ACTIVE') | Q(contract_status='NEED RENEWAL'),
@@ -280,13 +412,21 @@ class Payroll(models.Model):
         super(Payroll, self).save(args, kwargs)
 
     def bank_account(self):
+        """Return bank account of employee
+
+        Return
+        ------
+        str
+        """
         return self.contract.employee.bank_account
     bank_account.short_description = 'Bank Account'
 
     @transition(field=state, source=PayrollState.DRAFT, target=PayrollState.FINAL,
-                custom=dict(verbose="Finalized Calculation",), permission='operational.finalize_payroll')
+                custom=dict(verbose="Finalized Calculation",),
+                permission='operational.finalize_payroll')
     def finalize(self):
-        """
+        """Finalize payroll.
+
         Set payroll object to final state
         """
         self.total = self.calculate_total()
@@ -295,7 +435,8 @@ class Payroll(models.Model):
     @transition(field='state', source=PayrollState.FINAL, target=PayrollState.DRAFT,
                 permission='operational.unfinalize_payroll')
     def unfinalize(self):
-        """
+        """Unfinalize payroll.
+
         Set payroll final object to unfinalize state
         """
         pass
@@ -303,44 +444,75 @@ class Payroll(models.Model):
     @transition(field='state', source=PayrollState.FINAL, target=PayrollState.PAID,
                 permission='operational.pay_payroll')
     def pay(self):
-        """
+        """Pay payroll.
+
         Set payroll object to paid state
         """
         pass
 
     def get_attendance(self):
-        """
-        Get attendance for current payroll objects, should return Attendance objects
+        """Get attendance records.
+
+        Get attendance for current payroll objects, should return
+        Attendance objects.
+
+        Return
+        ------
+        attenande : class ``Attendance``
         """
         attendance = Attendance.objects.get(period=self.period, employee=self.contract.employee)
         return attendance
 
     def normative_overtime(self):
-        """
-        Get normative overtime value, should return value in Decimal format
+        """Get normative overtime.
+
+        Get normative overtime value, should return value in Decimal
+        format.
+
+        Return
+        ------
+        decimal
         """
         attendance = self.get_attendance()
         return self.normal_overtime * attendance.ln
 
     def specific_overtime(self):
-        """
-        Get value of specific overtime if set, should return value in Decimal format
+        """Get specific overtime.
+
+        Get value of specific overtime if set, should return value in
+        Decimal format.
+
+        Return
+        ------
+        decimal
         """
         attendance = self.get_attendance()
         salary_per_day = self.base_salary_per_day
         return attendance.lk * Decimal(salary_per_day)
 
     def changing_overtime(self):
-        """
-        Get changing overtime salary if set, should return value in Decimal format
+        """Get changable overtime.
+
+        Get changing overtime salary if set, should return value in
+        Decimal format.
+
+        Return
+        ------
+        decimal
         """
         attendance = self.get_attendance()
         salary_per_day = self.base_salary_per_day
         return attendance.lp * Decimal(salary_per_day)
 
     def hourly_overtime(self):
-        """
-        Get hourly based overtime, should return value in Decimal format
+        """Get hourly based overtime.
+
+        Get hourly based overtime, should return value in Decimal format.
+
+        Return
+        ------
+        decimal
+           Total salary on hourly based overtime
         """
         attendance = self.get_attendance()
         rate = self.overtime
@@ -351,17 +523,20 @@ class Payroll(models.Model):
         return l1 + l2 + l3 + l4
 
     def calculate_overtime(self, attendance, salary_per_day):
-        """
-        Calculating overtime based on employee attendance
+        """Get calculated overtime.
+
+        Calculating overtime based on employee attendance, this
+        method get called in calculate_total()
 
         Parameters
         ----------
-            attendance = Attendance objects
-            salary_per_day = value in Decimal format
+        attendance : ``Attendance`` object
+        salary_per_day : decimal
 
         Return
         ----------
-            total = Decimal format
+        decimal
+            Total salary on all type of overtime
         """
         rate = self.overtime
         ln = self.normal_overtime * attendance.ln
@@ -375,43 +550,60 @@ class Payroll(models.Model):
     calculate_overtime.short_description = 'Total Overtime'
 
     def calculate_decrease(self, attendance, salary_per_day):
-        """
-        Checking attendance record than multiply it with salary_per_day
+        """Get decreasable type salaries.
+
+        Checking attendance record than multiply it with salary_per_day,
+        this method get called in ``calculate_total()``.
 
         Parameters
         ----------
-            attendance = Attendance objects
-            salary_per_day = value in Decimal format
+        attendance : ``Attendance`` object
+        salary_per_day : decimal
+
         Return
         ----------
-            total = Decimal format
+        decimal
         """
         if attendance:
             total = (
-                (attendance.alpha_day + attendance.sick_day + attendance.leave_day)
-                * salary_per_day.quantize(Decimal("0.00"))
+                (
+                    attendance.alpha_day + attendance.sick_day + attendance.leave_day
+                ) * salary_per_day.quantize(Decimal("0.00"))
             )
         return total
     calculate_decrease.short_description = 'Decrease'
 
     def calculate_total(self):
-        """
-        Calculate total salary, total all decrease/increase aspect then return
-        total salary in Decimal format
+        """Calcuate total salaries.
+
+        Calculate total salary, total all decrease/increase aspect then
+        return total salary in Decimal format and has side effect of
+        changing ``Payroll.total`` value. This function triggered by
+        ``db_state_transition_update`` signal.
+
+        See Also
+        --------
+            ``operational.signals.db_state_transition_update``
+
+        Return
+        ------
+        decimal
+            Total salary
         """
         attendance = self.get_attendance()
         salary_per_day = self.base_salary_per_day
         total = self.base_salary + self.back_pay
 
-        # adding other salary details
+        # Adding other salary details
         other_salaries = self.payrolldetail_set.select_related('salary').all()
         for detail in other_salaries:
             detail.salary.name
+            # Checking decrease/increase type of evaluated salary
+            # detail item
             if detail.salary.calculate_condition == '+':
                 total += detail.value
             else:
                 total -= detail.value
-
         decrease = self.calculate_decrease(attendance, salary_per_day)
         overtime = self.calculate_overtime(attendance, salary_per_day.quantize(Decimal("0.00")))
         return (total + overtime - decrease).quantize(Decimal("0.00"))
@@ -419,13 +611,29 @@ class Payroll(models.Model):
 
 
 class PayrollDetail(models.Model):
-    """
+    """PayrollDetail models.
+
     Detail of Payroll objects, one payroll may have many of this objects
+    describing salary detail in certain ``Payroll`` object.
+
+    Attributes
+    ----------
+    payroll : ``Payroll`` objects
+    salary : ``SalaryName`` objects
+    value : decimal
+        Value/amount of salary type
+    note : str
     """
     payroll = models.ForeignKey(Payroll, verbose_name='Payroll')
     salary = models.ForeignKey(SalaryName, verbose_name='Component')
-    value = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, verbose_name='Value')
     note = models.CharField(max_length=255, blank=True, verbose_name='Note')
+    value = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Value'
+    )
 
     class Meta:
         verbose_name = 'Payroll Detail'
@@ -449,6 +657,10 @@ class PayrollDetail(models.Model):
 
 
 class CourseType(models.Model):
+    """Course type.
+
+    Records types of course.
+    """
     name = models.CharField(verbose_name='Name', max_length=255)
 
     class Meta:
@@ -460,6 +672,10 @@ class CourseType(models.Model):
 
 
 class Course(models.Model):
+    """Couse
+
+    Records course name based on course type.
+    """
     name = models.CharField(verbose_name='Name', max_length=255)
     course_type = models.ForeignKey(CourseType, verbose_name='Course Type')
 
@@ -472,6 +688,10 @@ class Course(models.Model):
 
 
 class TrainingSchedule(models.Model):
+    """Training schedule of course.
+
+    Records shcedule of training course to be held.
+    """
     date = models.DateField(verbose_name='Date')
     course = models.ForeignKey(Course, verbose_name='Courses')
     has_certificate = models.BooleanField(default=True, verbose_name='Certificate')
@@ -486,6 +706,21 @@ class TrainingSchedule(models.Model):
 
 
 class TrainingClass(models.Model):
+    """Training class.
+
+    Records class of any training availabe for particular employee &
+    schedule.
+
+    Attributes
+    ----------
+    employee : ``Employee`` object
+        Employee attending the class
+    schedule : ``TrainingSchedle`` object
+
+    See Also
+    --------
+    ``hrm.models.Employee``
+    """
     employee = models.ForeignKey(Employee, verbose_name='Employee')
     schedule = models.ForeignKey(TrainingSchedule, verbose_name='Schedule')
 

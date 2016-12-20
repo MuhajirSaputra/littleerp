@@ -15,6 +15,9 @@ from hrm.managers import (DefaultEmployeeContractManager,
 
 
 class BankName(models.Model):
+    """
+    Records bank list
+    """
     name = models.CharField(verbose_name=_('Bank Name'), max_length=50)
 
     class Meta:
@@ -62,6 +65,35 @@ class JobTitle(models.Model):
 
 
 class Employee(models.Model):
+    """
+    Model class to records employee list.
+
+    Attributes
+    ----------
+    reg_number : str
+        Employement registration number.
+    first_name, last_name: str
+    birth_place : str
+    birth_date : ``datetime.date`` object
+    phone_number : str
+    gender : str
+        This value representing the gender listed in
+        ``GENDER_CHOICES`` constant
+    bank : ``Bank`` object
+    bank_account`: str
+        Account bank number
+    religion : str
+    id_number : str
+    job_title : ``JobTitle`` object
+    division : ``Divison`` object
+    mother_name : str
+    blood_type : str
+        This value representing blood type listed in
+        ``BLOOD_TYPE_CHOICES`` constant
+    date_of_hire : ``datetime.date`` object
+    marital_status : str
+    is_active : boolean
+    """
     BLODD_TYPE_CHOICES = (
         ('A', 'A'),
         ('B', 'B'),
@@ -109,9 +141,12 @@ class Employee(models.Model):
         )
 
     def __unicode__(self):
-        return self.reg_number + " " + self.first_name + " " + self.last_name
+        return self.reg_number + " " + self.get_full_name()
 
     def get_full_name(self):
+        """Get employee's full name."""
+        if not self.last_name:
+            return self.first_name
         return self.first_name + " " + self.last_name
 
     get_full_name.short_description = 'Name'
@@ -202,7 +237,7 @@ class Education(models.Model):
         verbose_name = 'Education'
 
     def __unicode__(self):
-        return Education.GRADE_CHOICES[int(self.grade)-1][1]
+        return Education.GRADE_CHOICES[int(self.grade) - 1][1]
 
 
 class LeaveType(models.Model):
@@ -321,6 +356,13 @@ class Evaluation(models.Model):
         verbose_name_plural = 'Evaluations'
 
     def evaluation_rate(self):
+        """Calculation of evaluation rate result.
+
+        Return
+        ------
+        str
+            String of "BURUK", "CUKUP" or "BAIK"
+        """
         rate = 0
         rate_count = 0
         self.evaluationdetail_set.all()
@@ -361,8 +403,8 @@ class SalaryCategory(models.Model):
 
 class SalaryName(models.Model):
     CALCULATE_CHOICES = (
-            ('+', 'Adding Total Salary'),
-            ('-', 'Decreasing Total Salary')
+        ('+', 'Adding Total Salary'),
+        ('-', 'Decreasing Total Salary')
     )
 
     name = models.CharField(verbose_name=_('Salary Name'), max_length=255)
@@ -387,6 +429,26 @@ class SalaryName(models.Model):
 
 
 class EmployeeContract(models.Model):
+    """Contract of Employee
+
+    Records contract of ``Employee`` objects for particular
+    ``SalesOrder`` object.
+
+    Attributes
+    ----------
+    start_date, end_date : ``datetime.date``
+    employee : ``Employee`` object
+    service_related : ``SalesOrderDetail`` object
+    contract_status : str
+        Representing the status of contract of "ACTIVE", "NEED RENEWAL"
+        or "EXPIRED".
+    base_salary : decimal
+    reference : str
+        Reference of contract, usually to records number of physical
+        document's contract.
+    default_contract_manager : custom ``Django Manager`` object
+
+    """
     start_date = models.DateField(verbose_name=_('Start Date'))
     end_date = models.DateField(verbose_name=_('End Date'))
     employee = models.ForeignKey(
@@ -432,13 +494,13 @@ class EmployeeContract(models.Model):
         salaries = 0
         salaries += self.base_salary
         if not self.contract_status == "ACTIVE":
-            return "IDR{:,.2f}".format(salaries)
+            return salaries
         for other in self.other_salary.all():
             if other.salary_name.calculate_condition == "+":
                 salaries += other.value
             else:
                 salaries -= other.value
-        return 'IDR{:,.2f}'.format(salaries)
+        return salaries
     get_contract_salary.short_description = 'Other Salaries in Contract'
 
     def get_salaries_in_contract(self):
@@ -452,10 +514,11 @@ class EmployeeContract(models.Model):
     def check_contract_status(self):
         today = timezone.now()
         warning_level = today + datetime.timedelta(
-                days=settings.MINIERP_SETTINGS['HRM']['recontract_warning'])
-        if self.end_date < today.date():
+            days=settings.MINIERP_SETTINGS['HRM']['recontract_warning']
+        )
+        if self.end_date < today:
             return "EXPIRED"
-        if today.date() <= self.end_date <= warning_level.date():
+        if today <= self.end_date <= warning_level:
             return "NEED RENEWAL"
         return "ACTIVE"
 

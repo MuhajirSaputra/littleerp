@@ -1,18 +1,15 @@
-from functools import partial
-
 from fsm_admin.mixins import FSMTransitionMixin
 
 from django.contrib import admin
-from django.forms.models import modelformset_factory
 from django.shortcuts import redirect
 from django.core.urlresolvers import reverse
 from django.contrib.admin.options import IS_POPUP_VAR
 
-from operational.models import (
-    VisitCustomer, VisitPointRateItem, VisitCustomerDetail, PayrollPeriod, Attendance,
-    Payroll, PayrollDetail, PayrollState, PeriodState, CourseType, Course,
-    TrainingSchedule, TrainingClass
-)
+from operational.models import (VisitCustomer, VisitPointRateItem,
+                                VisitCustomerDetail, PayrollPeriod, Attendance,
+                                Payroll, PayrollDetail, PayrollState,
+                                PeriodState, CourseType, Course,
+                                TrainingSchedule, TrainingClass)
 from operational.forms import PayrollCreationForm, PayrollPeriodForm
 
 
@@ -76,7 +73,8 @@ class AttendanceAdmin(admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         if obj is not None and obj.period.state == PeriodState.CLOSE:
-            return ('work_day', 'sick_day', 'alpha_day', 'leave_day', 'leave_left', 'employee', 'period')
+            return ('work_day', 'sick_day', 'alpha_day', 'leave_day',
+                    'leave_left', 'employee', 'period')
         return super(AttendanceAdmin, self).get_readonly_fields(request, obj=obj)
 
     def has_delete_permission(self, request, obj=None):
@@ -98,15 +96,6 @@ class PayrollDetailInline(admin.TabularInline):
         if obj is not None and obj.state != PayrollState.DRAFT:
             return False
         return super(PayrollDetailInline, self).has_delete_permission(request, obj)
-
-
-class PayrollDetailInline(admin.TabularInline):
-	model = PayrollDetail
-
-	def get_readonly_fields(self, request, obj=None):
-		if obj is not None and (obj.state == PayrollState.FINAL or obj.state == PayrollState.PAID):
-			return ('salary', 'value', 'note')
-		return super(PayrollDetailInline, self).get_readonly_fields(request, obj=obj)
 
 
 @admin.register(Payroll)
@@ -154,16 +143,19 @@ class PayrollAdmin(FSMTransitionMixin, admin.ModelAdmin):
         return queryset.filter(staff=request.user)
 
     def get_form(self, request, obj=None, **kwargs):
-        defaults = {}
+        # defaults = {}
+        # if obj is None:
+        #     defaults['form'] = self.add_form
+        # defaults.update(kwargs)
+        # return super(PayrollAdmin, self).get_form(request, obj, **defaults)
         if obj is None:
-            defaults['form'] = self.add_form
-        defaults.update(kwargs)
-        return super(PayrollAdmin, self).get_form(request, obj, **defaults)
+            return self.add_form
+        return super(PayrollAdmin, self).get_form(request, obj, **kwargs)
 
     def get_fields(self, request, obj=None):
-        if obj is None:
+        if not obj:
             return ('period', 'contract')
-        return self.fields
+        return super(PayrollAdmin, self).get_fields(request, obj)
 
     def get_inline_instances(self, request, obj=None):
         if obj is None:
@@ -172,8 +164,8 @@ class PayrollAdmin(FSMTransitionMixin, admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         if obj is not None and obj.state != PayrollState.DRAFT:
-            return ('period', 'contract', 'base_salary', 'overtime', 'back_pay', 'base_salary_per_day',
-                    'normal_overtime')
+            return ('period', 'contract', 'base_salary', 'overtime', 'back_pay',
+                    'base_salary_per_day', 'normal_overtime')
         return super(PayrollAdmin, self).get_readonly_fields(request, obj=obj)
 
     def response_add(self, request, obj, post_url_continue=None):
@@ -221,7 +213,13 @@ class PayrollAdmin(FSMTransitionMixin, admin.ModelAdmin):
 
 @admin.register(PayrollPeriod)
 class PayrollPeriodAdmin(FSMTransitionMixin, admin.ModelAdmin):
-    list_display = ('period', 'date_create', 'start_date', 'end_date', 'state')
+    list_display = (
+        'period',
+        'date_create',
+        'start_date',
+        'end_date',
+        'state'
+    )
     fieldsets = (
         ('Period Information', {
             'fields': (('start_date', 'end_date'), 'state')

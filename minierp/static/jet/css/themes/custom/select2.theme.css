@@ -634,7 +634,7 @@
 }
 /* line 51, ../../select2/_multiple.scss */
 .select2-container--jet .select2-selection--multiple .select2-selection__choice__remove:hover {
-  color: #1cacfc;
+  color: #D82D4A;
 }
 /* line 59, ../../select2/_multiple.scss */
 .select2-container--jet[dir="rtl"] .select2-selection--multiple .select2-selection__choice, .select2-container--jet[dir="rtl"] .select2-selection--multiple .select2-selection__placeholder {
@@ -705,7 +705,7 @@
 .select2-container--jet .select2-dropdown {
   border: 0;
   border-radius: 4px;
-  box-shadow: 0 0 4px 0 rgba(164, 100, 196, 0.75);
+  box-shadow: 0 0 4px 0 rgba(194, 66, 87, 0.75);
   overflow: hidden;
   z-index: 1;
 }
@@ -763,7 +763,7 @@
 }
 /* line 114, ../../select2/_layout.scss */
 .select2-container--jet .select2-results__option[aria-selected=true] {
-  color: #A464C4;
+  color: #C24257;
 }
 /* line 118, ../../select2/_layout.scss */
 .select2-container--jet .select2-results__option .select2-results__option {
@@ -800,7 +800,7 @@
 }
 /* line 152, ../../select2/_layout.scss */
 .select2-container--jet .select2-results__option--highlighted[aria-selected] {
-  background-color: #1cacfc;
+  background-color: #D82D4A;
   color: #fff;
 }
 /* line 157, ../../select2/_layout.scss */
