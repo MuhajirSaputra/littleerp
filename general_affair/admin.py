@@ -6,13 +6,12 @@ from fsm_admin.mixins import FSMTransitionMixin
 
 from django.conf.urls import url
 from django.contrib import admin
-from django.template import Context
 
 from general_affair.models import (Supplier, SupplierBusinessType,
                                    ItemType, ItemCategory, Item, PurchaseOrder,
                                    OrderReceipt, ItemIssued, IDReleaseType,
                                    IDCard)
-from reporting.utils import HTML2PDF
+from reporting.response import PDFResponse
 
 
 def get_model_info(obj):
@@ -65,7 +64,6 @@ class SupplierAdmin(admin.ModelAdmin):
         })
     )
     search_fields = ('name', )
-    change_list_template = 'admin/general_affair/change_list.html'
 
     def get_urls(self):
         urls = super(SupplierAdmin, self).get_urls()
@@ -78,13 +76,12 @@ class SupplierAdmin(admin.ModelAdmin):
 
     def report(self, request, *args, **kwargs):
         queryset = self.model._default_manager.get_queryset()
-        context = Context({'suppliers': queryset, 'today': datetime.now()})
-        report = HTML2PDF(
-            context,
-            template_name='general_affair/report/supplier.html',
-            output='supplier_list.pdf'
-        )
-        return report.render(request)
+        template = 'general_affair/report/supplier.html'
+        context = {
+            'suppliers': queryset,
+            'today': datetime.now()
+        }
+        return PDFResponse(request, template, context, filename='Supplier.pdf')
 
 
 @admin.register(SupplierBusinessType)

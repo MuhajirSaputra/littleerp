@@ -157,4 +157,4 @@ class InvoiceTransaction(models.Model):
         verbose_name_plural = 'Financial Transactions'
 
     def __unicode__(self):
-        return self.Invoice
+        return self.invoice.__unicode__()
